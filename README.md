@@ -1,2 +1,2 @@
-# Fraud_detection
-GE-GNN
+# Fraud_detection using GE-GNN
+
