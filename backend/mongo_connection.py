@@ -12,7 +12,13 @@ from datetime import datetime
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(
+    app,
+    resources={r"/": {"origins": ""}},
+    supports_credentials=True,
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"]
+)
 app.config['JSON_SORT_KEYS'] = False
 
 def get_db():
