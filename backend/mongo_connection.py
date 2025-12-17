@@ -56,27 +56,25 @@ def test_connection():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/auth/login', methods=['POST'])
-@app.route('/api/auth/login', methods=['POST'])
 def login():
     try:
+        print("LOGIN API HIT")  # debug
+
         db = get_db()
         if db is None:
             return jsonify({'error': 'Database connection failed'}), 500
 
         data = request.get_json(silent=True) or {}
 
-        username = str(data.get('username') or '').strip()
-        password = str(data.get('password') or '')
+        username = str(data.get('username', '')).strip()
+        password = str(data.get('password', '')).strip()
 
         if not username or not password:
             return jsonify({'error': 'Username and password are required'}), 400
 
-        approved_user = db.approved_users.find_one({
-            'username': username,
-            'password': password
-        })
+        approved_user = db.approved_users.find_one({'username': username})
 
-        if approved_user:
+        if approved_user and approved_user.get('password') == password:
             return jsonify({
                 'success': True,
                 'message': 'Login successful',
@@ -104,6 +102,7 @@ def login():
         print("LOGIN ERROR:", e)
         traceback.print_exc()
         return jsonify({'error': 'Internal server error'}), 500
+
 
 @app.route('/api/feedback', methods=['POST'])
 def submit_feedback():
