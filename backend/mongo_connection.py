@@ -56,40 +56,54 @@ def test_connection():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/auth/login', methods=['POST'])
+@app.route('/api/auth/login', methods=['POST'])
 def login():
-    """Check if user exists and credentials are valid."""
     try:
         db = get_db()
         if db is None:
             return jsonify({'error': 'Database connection failed'}), 500
 
-        data = request.get_json()
-        username = (data.get('username') or '').strip()
-        password = data.get('password')
+        data = request.get_json(silent=True) or {}
+
+        username = str(data.get('username') or '').strip()
+        password = str(data.get('password') or '')
 
         if not username or not password:
             return jsonify({'error': 'Username and password are required'}), 400
 
-        # Check for an approved user with matching password (no hashing)
-        approved_user = db.approved_users.find_one({'username': username, 'password': password})
-        if approved_user:
-            user_data = {
-                'username': approved_user['username'],
-                'email': approved_user.get('email'),
-                'role': approved_user.get('role', 'user')
-            }
-            return jsonify({'success': True, 'message': 'Login successful', 'user': user_data}), 200
+        approved_user = db.approved_users.find_one({
+            'username': username,
+            'password': password
+        })
 
-        # If not an approved user, check if they have a pending access request
+        if approved_user:
+            return jsonify({
+                'success': True,
+                'message': 'Login successful',
+                'user': {
+                    'username': approved_user['username'],
+                    'email': approved_user.get('email'),
+                    'role': approved_user.get('role', 'user')
+                }
+            }), 200
+
         pending_request = db.access_requests.find_one({'username': username})
         if pending_request and pending_request.get('status') == 'pending':
-            return jsonify({'error': 'Your access request is still pending approval', 'status': 'pending'}), 403
+            return jsonify({
+                'error': 'Your access request is still pending approval',
+                'status': 'pending'
+            }), 403
 
-        return jsonify({'error': 'Invalid username or password', 'status': 'unauthorized', 'requestAccess': True}), 401
+        return jsonify({
+            'error': 'Invalid username or password',
+            'status': 'unauthorized',
+            'requestAccess': True
+        }), 401
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
+        print("LOGIN ERROR:", e)
+        traceback.print_exc()
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/feedback', methods=['POST'])
 def submit_feedback():
